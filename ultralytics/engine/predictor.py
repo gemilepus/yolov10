@@ -29,6 +29,7 @@ Usage - formats:
                               yolov8n_ncnn_model         # NCNN
 """
 
+import os
 import platform
 import re
 import threading
@@ -337,15 +338,35 @@ class BasePredictor:
                 im_gpu=None if self.args.retina_masks else im[i],
             )
 
+
+        # Test remove no delect data
+        msave_dir = str(self.save_dir)
+        save_dir_arr = msave_dir.split("\\")
+        if result.verbose().find("person") > -1 and result.verbose().find("1") > -1:
+            LOGGER.info(f" "+result.verbose())
+            LOGGER.info(f"save_dir_arr " +  save_dir_arr[8])
+        else:
+            self.args.save_txt=False
+            self.args.save=False
+            # remove emtpy folder
+            try:
+                os.rmdir(self.save_dir / 'labels')
+                os.rmdir(self.save_dir)
+            except: 
+                LOGGER.info(f"Save error")
+       
+       
         # Save results
-        if self.args.save_txt:
-            result.save_txt(f"{self.txt_path}.txt", save_conf=self.args.save_conf)
-        if self.args.save_crop:
-            result.save_crop(save_dir=self.save_dir / "crops", file_name=self.txt_path.stem)
-        if self.args.show:
-            self.show(str(p))
-        if self.args.save:
-            self.save_predicted_images(str(self.save_dir / (p.name or "tmp.jpg")), frame)
+        # if self.args.save_txt:
+        #     #result.save_txt(f"{self.txt_path}.txt", save_conf=self.args.save_conf)
+        #     result.save_txt(f"{self.save_dir}"+"\\"+save_dir_arr[8]+".txt", save_conf=self.args.save_conf) #Test
+        # if self.args.save_crop:
+        #     result.save_crop(save_dir=self.save_dir / "crops", file_name=self.txt_path.stem)
+        # if self.args.show:
+        #     self.show(str(p))
+        # if self.args.save:
+        #     #self.save_predicted_images(str(self.save_dir / (p.name or "tmp.jpg")), frame)
+        #     self.save_predicted_images(str(self.save_dir /  save_dir_arr[8])+".jpg", frame) #Test
 
         return string
 
