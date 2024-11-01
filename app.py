@@ -1,13 +1,21 @@
+import random
+import time
 import gradio as gr
 import cv2
 import tempfile
 from ultralytics import YOLOv10
 
+global model
+# model = YOLOv10.from_pretrained(f'jameslahm/yolov10m')
+model = YOLOv10('best.pt')
 
 def yolov10_inference(image, video, model_id, image_size, conf_threshold):
-    model = YOLOv10.from_pretrained(f'jameslahm/{model_id}')
+    # model = YOLOv10.from_pretrained(f'jameslahm/{model_id}')
+    # if random.randrange(11) > 9:
+    #     return image,None
+    
     if image:
-        results = model.predict(source=image, imgsz=image_size, conf=conf_threshold)
+        results = model.predict(source=image, imgsz=image_size, conf=conf_threshold,classes=[0,1],save=True,save_txt=True,name="test",show_labels=False,show_boxes=False)
         annotated_image = results[0].plot()
         return annotated_image[:, :, ::-1], None
     else:
@@ -43,12 +51,11 @@ def yolov10_inference_for_examples(image, model_path, image_size, conf_threshold
     annotated_image, _ = yolov10_inference(image, None, model_path, image_size, conf_threshold)
     return annotated_image
 
-
 def app():
     with gr.Blocks():
         with gr.Row():
             with gr.Column():
-                image = gr.Image(type="pil", label="Image", visible=True)
+                image = gr.Image(type="pil", label="Image", visible=True,streaming=True)
                 video = gr.Video(label="Video", visible=False)
                 input_type = gr.Radio(
                     choices=["Image", "Video"],
@@ -107,55 +114,48 @@ def app():
             else:
                 return yolov10_inference(None, video, model_id, image_size, conf_threshold)
 
-
         yolov10_infer.click(
             fn=run_inference,
             inputs=[image, video, model_id, image_size, conf_threshold, input_type],
             outputs=[output_image, output_video],
+            trigger_mode="always_last",
+            show_progress=False
         )
 
-        gr.Examples(
-            examples=[
-                [
-                    "ultralytics/assets/bus.jpg",
-                    "yolov10s",
-                    640,
-                    0.25,
-                ],
-                [
-                    "ultralytics/assets/zidane.jpg",
-                    "yolov10s",
-                    640,
-                    0.25,
-                ],
-            ],
-            fn=yolov10_inference_for_examples,
-            inputs=[
-                image,
-                model_id,
-                image_size,
-                conf_threshold,
-            ],
-            outputs=[output_image],
-            cache_examples='lazy',
-        )
+        image.change(
+            fn=run_inference,
+                    inputs=[image, video, model_id, image_size, conf_threshold, input_type],
+                    outputs=[output_image, output_video],
+                    trigger_mode='once',
+                    queue=False,
+                    show_progress=False
+                    )
 
-gradio_app = gr.Blocks()
+shortcut_js = """
+<script>
+        var intervalID = setInterval(function() {
+        //document.getElementById('component-14').click();
+        console.log('Auto click')
+        }, 30000);
+</script>
+"""
+
+gradio_app = gr.Blocks(head=shortcut_js,title="錄影中 請微笑")
 with gradio_app:
     gr.HTML(
         """
     <h1 style='text-align: center'>
-    YOLOv10: Real-Time End-to-End Object Detection
+    錄影中 請微笑
     </h1>
     """)
     gr.HTML(
         """
         <h3 style='text-align: center'>
-        <a href='https://arxiv.org/abs/2405.14458' target='_blank'>arXiv</a> | <a href='https://github.com/THU-MIG/yolov10' target='_blank'>github</a>
+        <a></a>
         </h3>
         """)
     with gr.Row():
         with gr.Column():
             app()
 if __name__ == '__main__':
-    gradio_app.launch()
+    gradio_app.launch(server_port=80,server_name="0.0.0.0")
