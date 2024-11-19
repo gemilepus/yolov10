@@ -61,6 +61,7 @@ def app():
                     choices=["Image", "Video"],
                     value="Image",
                     label="Input Type",
+                    visible=False,
                 )
                 model_id = gr.Dropdown(
                     label="Model",
@@ -73,6 +74,7 @@ def app():
                         "yolov10x",
                     ],
                     value="yolov10m",
+                    visible=False,
                 )
                 image_size = gr.Slider(
                     label="Image Size",
@@ -86,9 +88,12 @@ def app():
                     minimum=0.0,
                     maximum=1.0,
                     step=0.05,
-                    value=0.25,
+                    value=0.65,
                 )
-                yolov10_infer = gr.Button(value="Detect Objects")
+                yolov10_infer = gr.Button(
+                    value="Detect Objects",
+                    visible=False,
+                )
 
             with gr.Column():
                 output_image = gr.Image(type="numpy", label="Annotated Image", visible=True)
